@@ -27,12 +27,42 @@ function updateWeather() {
         .catch(error => console.error('Error fetching weather:', error));
 }
 
+function updateForecast() {
+    fetch('/api/forecast')
+        .then(response => response.json())
+        .then(forecasts => {
+            const forecastContainer = document.getElementById('forecast-info');
+            forecastContainer.innerHTML = ''; // Clear existing forecasts
+
+            forecasts.forEach(forecast => {
+                const forecastCol = document.createElement('div');
+                forecastCol.className = 'col';
+                
+                forecastCol.innerHTML = `
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">${forecast.date}</h5>
+                            <p class="mb-1">${forecast.temperature}°F</p>
+                            <p class="mb-1">${forecast.condition}</p>
+                            <p class="mb-0">Humidity: ${forecast.humidity}%</p>
+                        </div>
+                    </div>
+                `;
+                
+                forecastContainer.appendChild(forecastCol);
+            });
+        })
+        .catch(error => console.error('Error fetching forecast:', error));
+}
+
 // Update countdown every second
 setInterval(updateCountdown, 1000);
 
 // Update weather every 5 minutes
 setInterval(updateWeather, 300000);
+setInterval(updateForecast, 300000);
 
 // Initial updates
 updateCountdown();
 updateWeather();
+updateForecast();
