@@ -1,0 +1,39 @@
+body {
+    background-image: url('../images/cabo-background.svg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    position: relative;
+}
+
+.background-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 0;
+}
+
+.container {
+    position: relative;
+    z-index: 1;
+}
+
+.card {
+    background-color: rgba(var(--bs-dark-rgb), 0.8);
+    backdrop-filter: blur(10px);
+}
+
+.countdown-container h2 {
+    font-size: 3rem;
+    margin: 0;
+    font-weight: bold;
+}
+
+.weather-container {
+    max-width: 400px;
+    margin: 0 auto;
+}

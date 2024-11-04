@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cabo Countdown</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="background-overlay"></div>
+    <div class="container min-vh-100 d-flex align-items-center justify-content-center">
+        <div class="text-center">
+            <h1 class="display-4 mb-4">Cabo Countdown</h1>
+            
+            <div class="countdown-container mb-4">
+                <div class="row g-3">
+                    <div class="col">
+                        <div class="card">
+                            <div class="card-body">
+                                <h2 id="days">00</h2>
+                                <p>Days</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card">
+                            <div class="card-body">
+                                <h2 id="hours">00</h2>
+                                <p>Hours</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card">
+                            <div class="card-body">
+                                <h2 id="minutes">00</h2>
+                                <p>Minutes</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card">
+                            <div class="card-body">
+                                <h2 id="seconds">00</h2>
+                                <p>Seconds</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="weather-container card">
+                <div class="card-body">
+                    <h3>Current Weather in Cabo</h3>
+                    <div id="weather-info">
+                        <p>Temperature: <span id="temperature">--</span>°F</p>
+                        <p>Condition: <span id="condition">--</span></p>
+                        <p>Humidity: <span id="humidity">--</span>%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
