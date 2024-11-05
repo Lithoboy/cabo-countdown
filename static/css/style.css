@@ -54,3 +54,22 @@ h3, p {
 .text-muted {
     color: rgba(255, 255, 255, 0.8) !important;
 }
+
+.gallery-card {
+    transition: transform 0.3s ease-in-out;
+}
+
+.gallery-card:hover {
+    transform: translateY(-5px);
+}
+
+.gallery-card .card-img-top {
+    height: 200px;
+    object-fit: cover;
+    border-top-left-radius: calc(0.375rem - 1px);
+    border-top-right-radius: calc(0.375rem - 1px);
+}
+
+.gallery-card .card-body {
+    background-color: rgba(0, 0, 0, 0.5);
+}

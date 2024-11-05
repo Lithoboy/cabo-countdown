@@ -101,6 +101,59 @@
                     </div>
                 </div>
             </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3 class="mb-4">Photo Gallery</h3>
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="card gallery-card h-100">
+                                <img src="{{ url_for('static', filename='images/el-arco.jpg') }}" class="card-img-top" alt="El Arco">
+                                <div class="card-body">
+                                    <h5 class="card-title">El Arco</h5>
+                                    <p class="card-text">The famous arch at Land's End</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card gallery-card h-100">
+                                <img src="{{ url_for('static', filename='images/medano-beach.jpg') }}" class="card-img-top" alt="Medano Beach">
+                                <div class="card-body">
+                                    <h5 class="card-title">Medano Beach</h5>
+                                    <p class="card-text">Beautiful sandy beaches</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card gallery-card h-100">
+                                <img src="{{ url_for('static', filename='images/water-activities.jpg') }}" class="card-img-top" alt="Water Activities">
+                                <div class="card-body">
+                                    <h5 class="card-title">Water Activities</h5>
+                                    <p class="card-text">Experience exciting water sports</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card gallery-card h-100">
+                                <img src="{{ url_for('static', filename='images/sunset-cruise.jpg') }}" class="card-img-top" alt="Sunset Cruise">
+                                <div class="card-body">
+                                    <h5 class="card-title">Sunset Cruise</h5>
+                                    <p class="card-text">Enjoy breathtaking sunset views</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card gallery-card h-100">
+                                <img src="{{ url_for('static', filename='images/resort-view.jpg') }}" class="card-img-top" alt="Resort View">
+                                <div class="card-body">
+                                    <h5 class="card-title">Resort Views</h5>
+                                    <p class="card-text">Luxurious accommodations</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
