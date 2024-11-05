@@ -15,57 +15,64 @@
             <div class="countdown-container mb-4">
                 <div class="row g-3">
                     <div class="col">
-                        <div class="card">
-                            <div class="card-body">
-                                <h2 id="days">00</h2>
-                                <p>Days</p>
-                            </div>
+                        <div class="countdown-item">
+                            <h2 id="days">00</h2>
+                            <p>Days</p>
                         </div>
                     </div>
                     <div class="col">
-                        <div class="card">
-                            <div class="card-body">
-                                <h2 id="hours">00</h2>
-                                <p>Hours</p>
-                            </div>
+                        <div class="countdown-item">
+                            <h2 id="hours">00</h2>
+                            <p>Hours</p>
                         </div>
                     </div>
                     <div class="col">
-                        <div class="card">
-                            <div class="card-body">
-                                <h2 id="minutes">00</h2>
-                                <p>Minutes</p>
-                            </div>
+                        <div class="countdown-item">
+                            <h2 id="minutes">00</h2>
+                            <p>Minutes</p>
                         </div>
                     </div>
                     <div class="col">
-                        <div class="card">
-                            <div class="card-body">
-                                <h2 id="seconds">00</h2>
-                                <p>Seconds</p>
-                            </div>
+                        <div class="countdown-item">
+                            <h2 id="seconds">00</h2>
+                            <p>Seconds</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="weather-container card mb-4">
-                <div class="card-body">
-                    <h3>Current Weather in Cabo San Lucas, Mexico</h3>
-                    <div id="weather-info">
-                        <p>Temperature: <span id="temperature">--</span>°F</p>
-                        <p>Condition: <span id="condition">--</span></p>
-                        <p>Humidity: <span id="humidity">--</span>%</p>
-                    </div>
+            <div class="weather-container mb-4">
+                <h3>Current Weather in Cabo San Lucas, Mexico</h3>
+                <div id="weather-info">
+                    <p>Temperature: <span id="temperature">--</span>°F</p>
+                    <p>Condition: <span id="condition">--</span></p>
+                    <p>Humidity: <span id="humidity">--</span>%</p>
                 </div>
             </div>
 
-            <div class="weather-container card mb-4">
+            <div class="forecast-container mb-4">
+                <h3>5-Day Forecast for Cabo San Lucas, Mexico</h3>
+                <p class="text-muted small mb-3">A preview of upcoming weather. December weather may vary.</p>
+                <div id="forecast-info" class="row g-3">
+                    <!-- Forecast data will be populated here -->
+                </div>
+            </div>
+
+            <div class="card mb-4">
                 <div class="card-body">
-                    <h3>5-Day Forecast for Cabo San Lucas, Mexico</h3>
-                    <p class="text-muted small mb-3">A preview of upcoming weather. December weather may vary.</p>
-                    <div id="forecast-info" class="row g-3">
-                        <!-- Forecast data will be populated here -->
+                    <h3 class="mb-4">Desktop Wallpaper Instructions</h3>
+                    <div class="text-start">
+                        <p class="mb-3">To use this countdown as your desktop wallpaper:</p>
+                        <ol class="mb-4">
+                            <li>Right-click on your desktop and select "Personalize" or "Desktop Background"</li>
+                            <li>Choose "Browser" or "Web page" as your wallpaper type (Windows 11)</li>
+                            <li>Enter this website's URL in the browser field</li>
+                            <li>Click "Set webpage as wallpaper" or similar option</li>
+                            <li>Adjust the refresh rate as needed to keep the countdown current</li>
+                        </ol>
+                        <div class="alert alert-info">
+                            <strong>Note:</strong> For the best experience, keep this tab open in your browser to ensure the countdown stays current.
+                        </div>
                     </div>
                 </div>
             </div>
