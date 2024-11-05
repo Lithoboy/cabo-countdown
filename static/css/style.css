@@ -85,16 +85,34 @@ h3, h4, p {
     background-color: rgba(0, 0, 0, 0.5);
 }
 
-ol.text-start {
-    margin-bottom: 0;
-    padding-left: 1.5rem;
+/* New styles for links and hover effects */
+.card a {
+    color: inherit;
+    text-decoration: none;
+    display: block;
+    height: 100%;
 }
 
-ol.text-start li {
-    margin-bottom: 0.5rem;
-    text-shadow: none;
+.card a:hover {
+    color: var(--bs-primary);
 }
 
-ol.text-start li:last-child {
-    margin-bottom: 0;
+.link-hover {
+    transition: color 0.3s ease;
+}
+
+.link-hover:hover {
+    color: var(--bs-primary);
+}
+
+.gallery-card a {
+    height: 100%;
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.gallery-card:hover .card-img-top {
+    opacity: 0.9;
+    transition: opacity 0.3s ease;
 }

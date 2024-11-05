@@ -77,24 +77,30 @@
                         <div class="col-md-4">
                             <div class="card h-100">
                                 <div class="card-body">
-                                    <h4>El Arco</h4>
-                                    <p>The iconic limestone arch formation at Land's End. Perfect for boat tours and photos.</p>
+                                    <a href="https://www.visitloscabos.travel/experiences/el-arco/" target="_blank" class="text-decoration-none text-white" aria-label="Learn more about El Arco">
+                                        <h4 class="link-hover">El Arco</h4>
+                                        <p>The iconic limestone arch formation at Land's End. Perfect for boat tours and photos.</p>
+                                    </a>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="card h-100">
                                 <div class="card-body">
-                                    <h4>Medano Beach</h4>
-                                    <p>Cabo's main beach, famous for swimming, water sports, and beachfront restaurants.</p>
+                                    <a href="https://www.visitloscabos.travel/experiences/beaches/medano-beach/" target="_blank" class="text-decoration-none text-white" aria-label="Learn more about Medano Beach">
+                                        <h4 class="link-hover">Medano Beach</h4>
+                                        <p>Cabo's main beach, famous for swimming, water sports, and beachfront restaurants.</p>
+                                    </a>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="card h-100">
                                 <div class="card-body">
-                                    <h4>Water Activities</h4>
-                                    <p>Snorkeling, scuba diving, sport fishing, and whale watching (Dec-Apr).</p>
+                                    <a href="https://www.visitloscabos.travel/things-to-do/water-activities/" target="_blank" class="text-decoration-none text-white" aria-label="Explore water activities in Cabo">
+                                        <h4 class="link-hover">Water Activities</h4>
+                                        <p>Snorkeling, scuba diving, sport fishing, and whale watching (Dec-Apr).</p>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -108,47 +114,57 @@
                     <div class="row g-4">
                         <div class="col-md-4">
                             <div class="card gallery-card h-100">
-                                <img src="{{ url_for('static', filename='images/el-arco.jpg') }}" class="card-img-top" alt="El Arco">
-                                <div class="card-body">
-                                    <h5 class="card-title">El Arco</h5>
-                                    <p class="card-text">The famous arch at Land's End</p>
-                                </div>
+                                <a href="https://www.visitloscabos.travel/experiences/el-arco/" target="_blank" aria-label="View more details about El Arco">
+                                    <img src="{{ url_for('static', filename='images/el-arco.jpg') }}" class="card-img-top" alt="El Arco - The famous arch at Land's End">
+                                    <div class="card-body">
+                                        <h5 class="card-title link-hover">El Arco</h5>
+                                        <p class="card-text">The famous arch at Land's End</p>
+                                    </div>
+                                </a>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="card gallery-card h-100">
-                                <img src="{{ url_for('static', filename='images/medano-beach.jpg') }}" class="card-img-top" alt="Medano Beach">
-                                <div class="card-body">
-                                    <h5 class="card-title">Medano Beach</h5>
-                                    <p class="card-text">Beautiful sandy beaches</p>
-                                </div>
+                                <a href="https://www.visitloscabos.travel/experiences/beaches/medano-beach/" target="_blank" aria-label="View more details about Medano Beach">
+                                    <img src="{{ url_for('static', filename='images/medano-beach.jpg') }}" class="card-img-top" alt="Medano Beach - Beautiful sandy beaches">
+                                    <div class="card-body">
+                                        <h5 class="card-title link-hover">Medano Beach</h5>
+                                        <p class="card-text">Beautiful sandy beaches</p>
+                                    </div>
+                                </a>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="card gallery-card h-100">
-                                <img src="{{ url_for('static', filename='images/water-activities.jpg') }}" class="card-img-top" alt="Water Activities">
-                                <div class="card-body">
-                                    <h5 class="card-title">Water Activities</h5>
-                                    <p class="card-text">Experience exciting water sports</p>
-                                </div>
+                                <a href="https://www.visitloscabos.travel/things-to-do/water-activities/" target="_blank" aria-label="Learn more about water activities in Cabo">
+                                    <img src="{{ url_for('static', filename='images/water-activities.jpg') }}" class="card-img-top" alt="Water Activities - Experience exciting water sports">
+                                    <div class="card-body">
+                                        <h5 class="card-title link-hover">Water Activities</h5>
+                                        <p class="card-text">Experience exciting water sports</p>
+                                    </div>
+                                </a>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="card gallery-card h-100">
-                                <img src="{{ url_for('static', filename='images/sunset-cruise.jpg') }}" class="card-img-top" alt="Sunset Cruise">
-                                <div class="card-body">
-                                    <h5 class="card-title">Sunset Cruise</h5>
-                                    <p class="card-text">Enjoy breathtaking sunset views</p>
-                                </div>
+                                <a href="https://www.visitloscabos.travel/things-to-do/cruises/" target="_blank" aria-label="Learn more about sunset cruises in Cabo">
+                                    <img src="{{ url_for('static', filename='images/sunset-cruise.jpg') }}" class="card-img-top" alt="Sunset Cruise - Enjoy breathtaking sunset views">
+                                    <div class="card-body">
+                                        <h5 class="card-title link-hover">Sunset Cruise</h5>
+                                        <p class="card-text">Enjoy breathtaking sunset views</p>
+                                    </div>
+                                </a>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="card gallery-card h-100">
-                                <img src="{{ url_for('static', filename='images/resort-view.jpg') }}" class="card-img-top" alt="Resort View">
-                                <div class="card-body">
-                                    <h5 class="card-title">Resort Views</h5>
-                                    <p class="card-text">Luxurious accommodations</p>
-                                </div>
+                                <a href="https://www.visitloscabos.travel/hotels-and-resorts/" target="_blank" aria-label="Explore resorts in Cabo">
+                                    <img src="{{ url_for('static', filename='images/resort-view.jpg') }}" class="card-img-top" alt="Resort Views - Luxurious accommodations">
+                                    <div class="card-body">
+                                        <h5 class="card-title link-hover">Resort Views</h5>
+                                        <p class="card-text">Luxurious accommodations</p>
+                                    </div>
+                                </a>
                             </div>
                         </div>
                     </div>
