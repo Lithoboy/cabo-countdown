@@ -9,6 +9,17 @@ body {
     color: white;
 }
 
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 0;
+}
+
 .container {
     position: relative;
     z-index: 1;
@@ -43,7 +54,7 @@ h1.display-4 {
     font-weight: bold;
 }
 
-h3, p {
+h3, h4, p {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
 }
 
@@ -72,4 +83,18 @@ h3, p {
 
 .gallery-card .card-body {
     background-color: rgba(0, 0, 0, 0.5);
+}
+
+ol.text-start {
+    margin-bottom: 0;
+    padding-left: 1.5rem;
+}
+
+ol.text-start li {
+    margin-bottom: 0.5rem;
+    text-shadow: none;
+}
+
+ol.text-start li:last-child {
+    margin-bottom: 0;
 }
