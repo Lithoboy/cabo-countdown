@@ -55,6 +55,43 @@ function updateForecast() {
         .catch(error => console.error('Error fetching forecast:', error));
 }
 
+// Gallery Enhancement Functions
+function initializeGallery() {
+    const galleryCards = document.querySelectorAll('.gallery-card');
+    
+    galleryCards.forEach(card => {
+        // Add lazy loading to images
+        const img = card.querySelector('.card-img-top');
+        if (img) {
+            img.loading = 'lazy';
+        }
+
+        // Add hover animation class
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'translateY(-5px)';
+        });
+
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = 'translateY(0)';
+        });
+
+        // Add focus states for accessibility
+        const link = card.querySelector('a');
+        if (link) {
+            link.addEventListener('focus', () => {
+                card.style.transform = 'translateY(-5px)';
+            });
+
+            link.addEventListener('blur', () => {
+                card.style.transform = 'translateY(0)';
+            });
+        }
+    });
+}
+
+// Initialize gallery when DOM is loaded
+document.addEventListener('DOMContentLoaded', initializeGallery);
+
 // Update countdown every second
 setInterval(updateCountdown, 1000);
 
