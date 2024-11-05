@@ -66,6 +66,44 @@ h3, h4, p {
     color: rgba(255, 255, 255, 0.8) !important;
 }
 
+/* Webcam Section Styles */
+.webcam-container {
+    text-align: center;
+    padding: 1rem;
+}
+
+.webcam-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.webcam-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.live-indicator {
+    display: inline-block;
+    animation: pulse 2s infinite;
+    font-size: 0.9rem;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
 /* Enhanced Gallery Styles */
 .gallery-card {
     transition: all 0.3s ease-in-out;
@@ -175,5 +213,10 @@ h3, h4, p {
 @media (max-width: 768px) {
     .gallery-card .card-img-top {
         height: 180px;
+    }
+    
+    .webcam-link {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
     }
 }
