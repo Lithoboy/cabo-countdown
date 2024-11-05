@@ -36,16 +36,14 @@ function updateForecast() {
 
             forecasts.forEach(forecast => {
                 const forecastCol = document.createElement('div');
-                forecastCol.className = 'col';
+                forecastCol.className = 'col forecast-item';
                 
                 forecastCol.innerHTML = `
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <h5 class="card-title">${forecast.date}</h5>
-                            <p class="mb-1">${forecast.temperature}°F</p>
-                            <p class="mb-1">${forecast.condition}</p>
-                            <p class="mb-0">Humidity: ${forecast.humidity}%</p>
-                        </div>
+                    <div class="text-center">
+                        <h5 class="forecast-date">${forecast.date}</h5>
+                        <p class="forecast-temp mb-1">${forecast.temperature}°F</p>
+                        <p class="forecast-cond mb-1">${forecast.condition}</p>
+                        <p class="forecast-hum mb-0">Humidity: ${forecast.humidity}%</p>
                     </div>
                 `;
                 

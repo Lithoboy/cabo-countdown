@@ -71,6 +71,32 @@ body::before {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
 }
 
+.forecast-item {
+    padding: 1rem;
+    border-radius: 8px;
+    backdrop-filter: blur(5px);
+    transition: transform 0.3s ease;
+}
+
+.forecast-date {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.forecast-temp {
+    font-size: 1.4rem;
+    font-weight: 500;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.forecast-cond,
+.forecast-hum {
+    font-size: 1rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+}
+
 .card {
     background-color: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
@@ -233,5 +259,9 @@ h1.display-4 {
     .webcam-link {
         padding: 0.75rem 1.5rem;
         font-size: 1rem;
+    }
+
+    .forecast-item {
+        margin-bottom: 1rem;
     }
 }
