@@ -8,8 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="background-overlay"></div>
-    <div class="container min-vh-100 d-flex align-items-center justify-content-center">
+    <div class="container min-vh-100 d-flex align-items-center justify-content-center py-5">
         <div class="text-center">
             <h1 class="display-4 mb-4">Cabo Countdown</h1>
             
@@ -52,7 +51,7 @@
 
             <div class="weather-container card mb-4">
                 <div class="card-body">
-                    <h3>Current Weather in Cabo</h3>
+                    <h3>Current Weather in Cabo San Lucas, Mexico</h3>
                     <div id="weather-info">
                         <p>Temperature: <span id="temperature">--</span>°F</p>
                         <p>Condition: <span id="condition">--</span></p>
@@ -61,12 +60,44 @@
                 </div>
             </div>
 
-            <div class="weather-container card">
+            <div class="weather-container card mb-4">
                 <div class="card-body">
-                    <h3>5-Day Forecast for Cabo</h3>
+                    <h3>5-Day Forecast for Cabo San Lucas, Mexico</h3>
                     <p class="text-muted small mb-3">A preview of upcoming weather. December weather may vary.</p>
                     <div id="forecast-info" class="row g-3">
                         <!-- Forecast data will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3 class="mb-4">Popular Attractions & Activities</h3>
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h4>El Arco</h4>
+                                    <p>The iconic limestone arch formation at Land's End. Perfect for boat tours and photos.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h4>Medano Beach</h4>
+                                    <p>Cabo's main beach, famous for swimming, water sports, and beachfront restaurants.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h4>Water Activities</h4>
+                                    <p>Snorkeling, scuba diving, sport fishing, and whale watching (Dec-Apr).</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
