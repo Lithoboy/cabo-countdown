@@ -1,6 +1,22 @@
 // Set the date for December 19th of the current year
 const targetDate = new Date(new Date().getFullYear(), 11, 19);
 
+// Client-side cache for weather data
+const weatherCache = {
+    weather: null,
+    forecast: null,
+    weatherTimestamp: null,
+    forecastTimestamp: null
+};
+
+// Cache duration in milliseconds
+const WEATHER_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const FORECAST_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+
+// Update intervals
+const WEATHER_UPDATE_INTERVAL = 15 * 60 * 1000; // 15 minutes
+const FORECAST_UPDATE_INTERVAL = 30 * 60 * 1000; // 30 minutes
+
 function updateCountdown() {
     const currentDate = new Date();
     const difference = targetDate - currentDate;
@@ -24,7 +40,8 @@ async function fetchWithRetry(url, retries = 3, initialDelay = 1000) {
                 headers: {
                     'Accept': 'application/json',
                     'User-Agent': 'Cabo Countdown App/1.0'
-                }
+                },
+                cache: 'no-cache'
             });
             
             if (!response.ok) {
@@ -42,7 +59,7 @@ async function fetchWithRetry(url, retries = 3, initialDelay = 1000) {
             console.warn(`Attempt ${i + 1}/${retries} failed:`, error.message);
             
             if (i < retries - 1) {
-                const delay = initialDelay * Math.pow(2, i); // Exponential backoff
+                const delay = Math.min(initialDelay * Math.pow(2, i), 8000); // Cap at 8 seconds
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
@@ -50,69 +67,126 @@ async function fetchWithRetry(url, retries = 3, initialDelay = 1000) {
     throw lastError;
 }
 
+function isCacheValid(timestamp, duration) {
+    return timestamp && (Date.now() - timestamp) < duration;
+}
+
+function updateWeatherUI(data, showFallback = false) {
+    const tempElement = document.getElementById('temperature');
+    const condElement = document.getElementById('condition');
+    const humElement = document.getElementById('humidity');
+
+    if (showFallback) {
+        tempElement.parentElement.classList.add('text-warning');
+        condElement.parentElement.classList.add('text-warning');
+    } else {
+        tempElement.parentElement.classList.remove('text-warning');
+        condElement.parentElement.classList.remove('text-warning');
+    }
+
+    tempElement.textContent = data.temperature;
+    condElement.textContent = data.condition;
+    humElement.textContent = data.humidity;
+}
+
 async function updateWeather() {
     try {
-        const data = await fetchWithRetry('/api/weather');
-        if (data.temperature === '--' || !data.temperature) {
-            console.warn('Invalid weather data received:', data);
+        // Check cache first
+        if (isCacheValid(weatherCache.weatherTimestamp, WEATHER_CACHE_DURATION)) {
+            updateWeatherUI(weatherCache.weather, weatherCache.weather.is_fallback);
             return;
         }
+
+        const data = await fetchWithRetry('/api/weather');
         
-        document.getElementById('temperature').textContent = data.temperature;
-        document.getElementById('condition').textContent = data.condition;
-        document.getElementById('humidity').textContent = data.humidity;
+        if (!data || (data.temperature === '--' && data.condition === '--')) {
+            throw new Error('Invalid weather data received');
+        }
+
+        // Update cache
+        weatherCache.weather = data;
+        weatherCache.weatherTimestamp = Date.now();
+        
+        updateWeatherUI(data, data.is_fallback);
     } catch (error) {
         console.error('Error fetching weather:', error.message);
-        // Add visual feedback for users
-        const tempElement = document.getElementById('temperature');
-        const condElement = document.getElementById('condition');
-        const humElement = document.getElementById('humidity');
         
-        if (!tempElement.textContent || tempElement.textContent === '--') {
-            tempElement.textContent = '--';
-            condElement.textContent = 'Service Unavailable';
-            humElement.textContent = '--';
+        // Use cached data if available
+        if (weatherCache.weather) {
+            updateWeatherUI(weatherCache.weather, true);
+        } else {
+            // Show error state
+            document.getElementById('temperature').textContent = '--';
+            document.getElementById('condition').textContent = 'Service Unavailable';
+            document.getElementById('humidity').textContent = '--';
+            
+            document.getElementById('temperature').parentElement.classList.add('text-danger');
+            document.getElementById('condition').parentElement.classList.add('text-danger');
         }
     }
 }
 
-async function updateForecast() {
-    try {
-        const forecasts = await fetchWithRetry('/api/forecast');
-        const forecastContainer = document.getElementById('forecast-info');
+function updateForecastUI(forecasts, showFallback = false) {
+    const forecastContainer = document.getElementById('forecast-info');
+    forecastContainer.innerHTML = '';
+
+    if (!forecasts || forecasts.length === 0) {
+        forecastContainer.innerHTML = `
+            <div class="col text-center">
+                <p class="text-muted">Forecast temporarily unavailable</p>
+            </div>
+        `;
+        return;
+    }
+
+    forecasts.forEach(forecast => {
+        const forecastCol = document.createElement('div');
+        forecastCol.className = 'col forecast-item';
         
-        if (!forecasts || !Array.isArray(forecasts) || forecasts.length === 0) {
-            console.warn('Invalid forecast data received:', forecasts);
-            return;
+        if (showFallback) {
+            forecastCol.classList.add('text-warning');
         }
         
-        forecastContainer.innerHTML = ''; // Clear existing forecasts
+        forecastCol.innerHTML = `
+            <div class="text-center">
+                <h5 class="forecast-date">${forecast.date}</h5>
+                <p class="forecast-temp mb-1">${forecast.temperature}°F</p>
+                <p class="forecast-cond mb-1">${forecast.condition}</p>
+                <p class="forecast-hum mb-0">Humidity: ${forecast.humidity}%</p>
+            </div>
+        `;
+        
+        forecastContainer.appendChild(forecastCol);
+    });
+}
 
-        forecasts.forEach(forecast => {
-            const forecastCol = document.createElement('div');
-            forecastCol.className = 'col forecast-item';
-            
-            forecastCol.innerHTML = `
-                <div class="text-center">
-                    <h5 class="forecast-date">${forecast.date}</h5>
-                    <p class="forecast-temp mb-1">${forecast.temperature}°F</p>
-                    <p class="forecast-cond mb-1">${forecast.condition}</p>
-                    <p class="forecast-hum mb-0">Humidity: ${forecast.humidity}%</p>
-                </div>
-            `;
-            
-            forecastContainer.appendChild(forecastCol);
-        });
+async function updateForecast() {
+    try {
+        // Check cache first
+        if (isCacheValid(weatherCache.forecastTimestamp, FORECAST_CACHE_DURATION)) {
+            updateForecastUI(weatherCache.forecast, false);
+            return;
+        }
+
+        const forecasts = await fetchWithRetry('/api/forecast');
+        
+        if (!forecasts || !Array.isArray(forecasts)) {
+            throw new Error('Invalid forecast data received');
+        }
+
+        // Update cache
+        weatherCache.forecast = forecasts;
+        weatherCache.forecastTimestamp = Date.now();
+        
+        updateForecastUI(forecasts, false);
     } catch (error) {
         console.error('Error fetching forecast:', error.message);
-        // Keep existing forecast data if available, otherwise show error state
-        const forecastContainer = document.getElementById('forecast-info');
-        if (!forecastContainer.children.length) {
-            forecastContainer.innerHTML = `
-                <div class="col text-center">
-                    <p class="text-muted">Forecast temporarily unavailable</p>
-                </div>
-            `;
+        
+        // Use cached data if available
+        if (weatherCache.forecast) {
+            updateForecastUI(weatherCache.forecast, true);
+        } else {
+            updateForecastUI(null);
         }
     }
 }
@@ -157,10 +231,9 @@ document.addEventListener('DOMContentLoaded', initializeGallery);
 // Update countdown every second
 setInterval(updateCountdown, 1000);
 
-// Update weather every 15 minutes
-const WEATHER_UPDATE_INTERVAL = 15 * 60 * 1000; // 15 minutes
+// Update weather and forecast at different intervals
 setInterval(updateWeather, WEATHER_UPDATE_INTERVAL);
-setInterval(updateForecast, WEATHER_UPDATE_INTERVAL);
+setInterval(updateForecast, FORECAST_UPDATE_INTERVAL);
 
 // Initial updates
 updateCountdown();
