@@ -16,22 +16,37 @@ function updateCountdown() {
     document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
 }
 
-function updateWeather() {
-    fetch('/api/weather')
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('temperature').textContent = data.temperature;
-            document.getElementById('condition').textContent = data.condition;
-            document.getElementById('humidity').textContent = data.humidity;
-        })
-        .catch(error => console.error('Error fetching weather:', error));
+async function fetchWithRetry(url, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            if (i === retries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Exponential backoff
+        }
+    }
 }
 
-function updateForecast() {
-    fetch('/api/forecast')
-        .then(response => response.json())
-        .then(forecasts => {
-            const forecastContainer = document.getElementById('forecast-info');
+async function updateWeather() {
+    try {
+        const data = await fetchWithRetry('/api/weather');
+        document.getElementById('temperature').textContent = data.temperature;
+        document.getElementById('condition').textContent = data.condition;
+        document.getElementById('humidity').textContent = data.humidity;
+    } catch (error) {
+        console.error('Error fetching weather:', error);
+        // Don't update the UI if there's an error, keep the previous values
+    }
+}
+
+async function updateForecast() {
+    try {
+        const forecasts = await fetchWithRetry('/api/forecast');
+        const forecastContainer = document.getElementById('forecast-info');
+        
+        if (forecasts && forecasts.length > 0) {
             forecastContainer.innerHTML = ''; // Clear existing forecasts
 
             forecasts.forEach(forecast => {
@@ -49,8 +64,11 @@ function updateForecast() {
                 
                 forecastContainer.appendChild(forecastCol);
             });
-        })
-        .catch(error => console.error('Error fetching forecast:', error));
+        }
+    } catch (error) {
+        console.error('Error fetching forecast:', error);
+        // Don't update the UI if there's an error, keep the previous values
+    }
 }
 
 // Gallery Enhancement Functions
@@ -93,9 +111,9 @@ document.addEventListener('DOMContentLoaded', initializeGallery);
 // Update countdown every second
 setInterval(updateCountdown, 1000);
 
-// Update weather every 5 minutes
-setInterval(updateWeather, 300000);
-setInterval(updateForecast, 300000);
+// Update weather every 15 minutes instead of 5 to reduce API calls
+setInterval(updateWeather, 900000);
+setInterval(updateForecast, 900000);
 
 // Initial updates
 updateCountdown();

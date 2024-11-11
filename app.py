@@ -2,11 +2,16 @@ from flask import Flask, render_template, jsonify
 from datetime import datetime, timedelta
 import requests
 import os
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
 API_KEY = os.environ.get('OPENWEATHERMAP_API_KEY')
-BASE_URL = "http://api.openweathermap.org/data/2.5"
+BASE_URL = "https://api.openweathermap.org/data/2.5"
 
 def get_current_weather():
     try:
@@ -16,7 +21,8 @@ def get_current_weather():
                 'q': 'Cabo San Lucas,MX',
                 'appid': API_KEY,
                 'units': 'imperial'
-            }
+            },
+            timeout=10  # Add timeout
         )
         response.raise_for_status()
         data = response.json()
@@ -25,9 +31,15 @@ def get_current_weather():
             'condition': data['weather'][0]['main'],
             'humidity': data['main']['humidity']
         }
+    except requests.Timeout:
+        logger.error("Timeout while fetching current weather")
+        return {'temperature': '--', 'condition': 'Temporarily Unavailable', 'humidity': '--'}
+    except requests.RequestException as e:
+        logger.error(f"Error fetching current weather: {str(e)}")
+        return {'temperature': '--', 'condition': 'Temporarily Unavailable', 'humidity': '--'}
     except Exception as e:
-        print(f"Error fetching current weather: {e}")
-        return {'temperature': '--', 'condition': '--', 'humidity': '--'}
+        logger.error(f"Unexpected error in get_current_weather: {str(e)}")
+        return {'temperature': '--', 'condition': 'Temporarily Unavailable', 'humidity': '--'}
 
 def get_trip_forecast():
     try:
@@ -37,7 +49,8 @@ def get_trip_forecast():
                 'q': 'Cabo San Lucas,MX',
                 'appid': API_KEY,
                 'units': 'imperial'
-            }
+            },
+            timeout=10  # Add timeout
         )
         response.raise_for_status()
         data = response.json()
@@ -61,8 +74,14 @@ def get_trip_forecast():
                     break
         
         return forecasts
+    except requests.Timeout:
+        logger.error("Timeout while fetching forecast")
+        return []
+    except requests.RequestException as e:
+        logger.error(f"Error fetching forecast: {str(e)}")
+        return []
     except Exception as e:
-        print(f"Error fetching forecast: {e}")
+        logger.error(f"Unexpected error in get_trip_forecast: {str(e)}")
         return []
 
 @app.route('/')
@@ -76,3 +95,9 @@ def weather():
 @app.route('/api/forecast')
 def forecast():
     return jsonify(get_trip_forecast())
+
+if __name__ == "__main__":
+    # Verify API key is present
+    if not API_KEY:
+        logger.error("OpenWeatherMap API key is not set!")
+    app.run(host="0.0.0.0", port=5000)
