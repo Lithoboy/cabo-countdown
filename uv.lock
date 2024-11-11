@@ -551,6 +551,7 @@ dependencies = [
     { name = "ratelimit" },
     { name = "requests" },
     { name = "trafilatura" },
+    { name = "waitress" },
 ]
 
 [package.metadata]
@@ -563,6 +564,7 @@ requires-dist = [
     { name = "ratelimit", specifier = ">=2.2.1" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "trafilatura", specifier = ">=1.12.2" },
+    { name = "waitress", specifier = ">=3.0.1" },
 ]
 
 [[package]]
@@ -690,6 +692,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/ed/63/22ba4ebfe7430b76388e7cd448d5478814d3032121827c12a2cc287e2260/urllib3-2.2.3.tar.gz", hash = "sha256:e7d814a81dad81e6caf2ec9fdedb284ecc9c73076b62654547cc64ccdcae26e9", size = 300677 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ce/d9/5f4c13cecde62396b0d3fe530a50ccea91e7dfc1ccf0e09c228841bb5ba8/urllib3-2.2.3-py3-none-any.whl", hash = "sha256:ca899ca043dcb1bafa3e262d73aa25c465bfb49e0bd9dd5d59f1d0acba2f8fac", size = 126338 },
+]
+
+[[package]]
+name = "waitress"
+version = "3.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cb/0b/5920c63f93c17f9b04117f271f97619a74e087bf3de0aeed2cfd28510194/waitress-3.0.1.tar.gz", hash = "sha256:ef0c1f020d9f12a515c4ec65c07920a702613afcad1dbfdc3bcec256b6c072b3", size = 180560 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/77/7a/e3d9728774c66c84cdab509955539720fc0dc55781b8d79b299665752749/waitress-3.0.1-py3-none-any.whl", hash = "sha256:26cdbc593093a15119351690752c99adc13cbc6786d75f7b6341d1234a3730ac", size = 56678 },
 ]
 
 [[package]]

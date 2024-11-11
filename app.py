@@ -12,7 +12,7 @@ import threading
 # Configure logging with more detailed format
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(funcName)s:%(lineno)d'
 )
 logger = logging.getLogger(__name__)
 
@@ -21,17 +21,17 @@ app = Flask(__name__)
 API_KEY = os.environ.get('OPENWEATHERMAP_API_KEY')
 BASE_URL = "https://api.openweathermap.org/data/2.5"
 
-# Cache configuration
-weather_cache = TTLCache(maxsize=100, ttl=300)  # 5 minutes cache
-forecast_cache = TTLCache(maxsize=100, ttl=1800)  # 30 minutes cache
+# Cache configuration - increased TTL for better reliability
+weather_cache = TTLCache(maxsize=100, ttl=1800)  # 30 minutes cache
+forecast_cache = TTLCache(maxsize=100, ttl=7200)  # 2 hours cache
 
-# Rate limiting configuration - 60 calls per minute
-CALLS = 60
+# Rate limiting configuration - reduced calls to prevent hitting limits
+CALLS = 20
 RATE_LIMIT_PERIOD = 60
 
 # Common headers for API requests
 API_HEADERS = {
-    'User-Agent': 'Cabo Countdown App/1.0',
+    'User-Agent': 'CaboCountdown/1.0',
     'Accept': 'application/json',
     'Accept-Encoding': 'gzip, deflate'
 }
@@ -49,43 +49,75 @@ api_lock = threading.Lock()
 
 @sleep_and_retry
 @limits(calls=CALLS, period=RATE_LIMIT_PERIOD)
-def make_request_with_retry(url, params, max_retries=3):
+def make_request_with_retry(url, params, max_retries=5):
     """Make HTTP request with exponential backoff retry logic and rate limiting"""
     last_error = None
+    attempts = []
     
     with api_lock:  # Thread-safe request handling
         for attempt in range(max_retries):
             try:
+                logger.info(f"Making request attempt {attempt + 1}/{max_retries} to {url}")
+                
                 response = requests.get(
                     url,
                     params=params,
                     headers=API_HEADERS,
-                    timeout=10
+                    timeout=20  # Increased timeout
                 )
+                
+                # Log response details
+                logger.info(f"Response status: {response.status_code}, Content length: {len(response.content)}")
+                
                 response.raise_for_status()
                 
                 # Verify we got valid JSON response
                 data = response.json()
                 if not data:
                     raise ValueError("Empty response received")
-                    
+                
+                logger.info("Request successful")
                 return data
                 
             except requests.Timeout as e:
+                error_info = {
+                    'attempt': attempt + 1,
+                    'error_type': 'timeout',
+                    'message': str(e)
+                }
+                attempts.append(error_info)
                 last_error = f"Timeout on attempt {attempt + 1}/{max_retries}"
-                logger.warning(last_error)
+                logger.warning(last_error, extra={'error_info': error_info})
             except requests.RequestException as e:
+                error_info = {
+                    'attempt': attempt + 1,
+                    'error_type': 'request_error',
+                    'message': str(e),
+                    'status_code': getattr(e.response, 'status_code', None)
+                }
+                attempts.append(error_info)
                 last_error = f"Request failed on attempt {attempt + 1}/{max_retries}: {str(e)}"
-                logger.warning(last_error)
+                logger.warning(last_error, extra={'error_info': error_info})
             except (ValueError, json.JSONDecodeError) as e:
+                error_info = {
+                    'attempt': attempt + 1,
+                    'error_type': 'json_error',
+                    'message': str(e)
+                }
+                attempts.append(error_info)
                 last_error = f"Invalid JSON response on attempt {attempt + 1}/{max_retries}: {str(e)}"
-                logger.warning(last_error)
+                logger.warning(last_error, extra={'error_info': error_info})
             
             if attempt < max_retries - 1:
-                sleep_time = min(2 ** attempt, 8)  # Cap max sleep time at 8 seconds
+                sleep_time = min(2 ** attempt * 2, 16)  # Cap max sleep time at 16 seconds
+                logger.info(f"Waiting {sleep_time} seconds before retry")
                 time.sleep(sleep_time)
             else:
-                raise RuntimeError(f"All retries failed: {last_error}")
+                logger.error(f"All retries failed: {last_error}", extra={'attempts': attempts})
+                raise RuntimeError({
+                    'message': f"All retries failed: {last_error}",
+                    'attempts': attempts
+                })
 
 def get_cached_weather():
     """Get weather data from cache or API with fallback"""
@@ -122,10 +154,11 @@ def get_cached_weather():
         
         # Cache the successful response
         weather_cache[cache_key] = weather_data
+        logger.info("Successfully fetched and cached new weather data")
         return weather_data
 
     except Exception as e:
-        logger.error(f"Error in get_cached_weather: {str(e)}")
+        logger.error(f"Error in get_cached_weather: {str(e)}", exc_info=True)
         # Return fallback data with error information
         return {**FALLBACK_WEATHER, 'error': str(e)}
 
@@ -180,10 +213,11 @@ def get_cached_forecast():
         if forecasts:
             # Cache the successful response
             forecast_cache[cache_key] = forecasts
+            logger.info("Successfully fetched and cached new forecast data")
             
         return forecasts
     except Exception as e:
-        logger.error(f"Error in get_cached_forecast: {str(e)}")
+        logger.error(f"Error in get_cached_forecast: {str(e)}", exc_info=True)
         # Return empty list for forecast errors
         return []
 
@@ -220,12 +254,14 @@ def health_check():
             'api_status': 'connected' if not weather_data.get('is_fallback') else 'disconnected',
             'cache_status': {
                 'weather_cache_size': len(weather_cache),
-                'forecast_cache_size': len(forecast_cache)
+                'forecast_cache_size': len(forecast_cache),
+                'weather_cache_ttl': weather_cache.ttl,
+                'forecast_cache_ttl': forecast_cache.ttl
             },
             'timestamp': datetime.utcnow().isoformat()
         }), 200
     except Exception as e:
-        logger.error(f"Health check failed: {str(e)}")
+        logger.error(f"Health check failed: {str(e)}", exc_info=True)
         return jsonify({
             'status': 'unhealthy',
             'message': str(e),

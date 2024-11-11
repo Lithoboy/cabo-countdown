@@ -10,17 +10,21 @@ const weatherCache = {
 };
 
 // Cache duration in milliseconds
-const WEATHER_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-const FORECAST_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+const WEATHER_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+const FORECAST_CACHE_DURATION = 120 * 60 * 1000; // 2 hours
 
 // Update intervals
-const WEATHER_UPDATE_INTERVAL = 15 * 60 * 1000; // 15 minutes
-const FORECAST_UPDATE_INTERVAL = 30 * 60 * 1000; // 30 minutes
+const WEATHER_UPDATE_INTERVAL = 30 * 60 * 1000; // 30 minutes
+const FORECAST_UPDATE_INTERVAL = 120 * 60 * 1000; // 2 hours
 
 // Request configuration
-const REQUEST_TIMEOUT = 10000; // 10 seconds
-const MAX_RETRIES = 3;
-const INITIAL_RETRY_DELAY = 1000;
+const REQUEST_TIMEOUT = 20000; // 20 seconds
+const MAX_RETRIES = 5;
+const INITIAL_RETRY_DELAY = 2000;
+
+// Error tracking
+let consecutiveErrors = 0;
+const MAX_CONSECUTIVE_ERRORS = 3;
 
 function updateCountdown() {
     const currentDate = new Date();
@@ -41,20 +45,34 @@ async function fetchWithTimeout(url, options = {}) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
     
+    const requestStart = Date.now();
+    
     try {
         const response = await fetch(url, {
             ...options,
             signal: controller.signal,
             headers: {
                 'Accept': 'application/json',
-                'User-Agent': 'Cabo Countdown App/1.0',
                 'Cache-Control': 'no-cache',
                 ...options.headers
             }
         });
         
         clearTimeout(id);
-        return response;
+        
+        const responseTime = Date.now() - requestStart;
+        console.log(`Request to ${url} completed in ${responseTime}ms`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        if (!data) {
+            throw new Error('Empty response received');
+        }
+        
+        return data;
     } catch (error) {
         clearTimeout(id);
         throw error;
@@ -63,40 +81,52 @@ async function fetchWithTimeout(url, options = {}) {
 
 async function fetchWithRetry(url, retries = MAX_RETRIES, initialDelay = INITIAL_RETRY_DELAY) {
     let lastError;
+    let attempts = [];
     
     for (let i = 0; i < retries; i++) {
         try {
-            const response = await fetchWithTimeout(url);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            if (!data) {
-                throw new Error('Empty response received');
-            }
-            
+            const data = await fetchWithTimeout(url);
+            consecutiveErrors = 0; // Reset error counter on success
             return data;
         } catch (error) {
             lastError = error;
             const retryCount = i + 1;
             const isLastAttempt = retryCount === retries;
             
+            const errorInfo = {
+                attempt: retryCount,
+                timestamp: new Date().toISOString(),
+                error: error.message || 'Unknown error',
+                type: error.name,
+                url: url
+            };
+            
+            attempts.push(errorInfo);
+            
             console.warn(
                 `Attempt ${retryCount}/${retries} failed:`,
-                error.name === 'AbortError' ? 'Request timeout' : error.message,
-                isLastAttempt ? '(Final attempt)' : ''
+                errorInfo
             );
             
             if (!isLastAttempt) {
-                const delay = Math.min(initialDelay * Math.pow(2, i), 8000); // Cap at 8 seconds
+                const delay = Math.min(initialDelay * Math.pow(2, i), 16000); // Cap at 16 seconds
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
     }
     
-    throw new Error(`Failed after ${retries} attempts: ${lastError.message}`);
+    consecutiveErrors++;
+    
+    const error = {
+        message: `Failed after ${retries} attempts`,
+        lastError: lastError.message,
+        attempts: attempts,
+        consecutiveErrors,
+        timestamp: new Date().toISOString()
+    };
+    
+    console.error('Request failed completely:', error);
+    throw error;
 }
 
 function isCacheValid(timestamp, duration) {
@@ -114,14 +144,24 @@ function updateWeatherUI(data, showFallback = false) {
     if (showFallback) {
         tempElement.parentElement.classList.add('text-warning');
         condElement.parentElement.classList.add('text-warning');
+        humElement.parentElement.classList.add('data-fallback');
     } else {
         tempElement.parentElement.classList.remove('text-warning');
         condElement.parentElement.classList.remove('text-warning');
+        humElement.parentElement.classList.remove('data-fallback');
     }
     
     tempElement.textContent = data.temperature;
     condElement.textContent = data.condition;
     humElement.textContent = data.humidity;
+    
+    if (data.error) {
+        const weatherInfo = document.getElementById('weather-info');
+        const errorMsg = document.createElement('p');
+        errorMsg.className = 'text-danger small mt-2';
+        errorMsg.textContent = 'Weather data may be delayed';
+        weatherInfo.appendChild(errorMsg);
+    }
 }
 
 async function updateWeather() {
@@ -136,7 +176,7 @@ async function updateWeather() {
         
         const data = await fetchWithRetry('/api/weather');
         
-        if (!data || (data.temperature === '--' && data.condition === '--')) {
+        if (!data || (data.temperature === undefined && data.condition === undefined)) {
             throw new Error('Invalid weather data received');
         }
         
@@ -149,6 +189,8 @@ async function updateWeather() {
         console.error('Error fetching weather:', {
             message: error.message,
             timestamp: new Date().toISOString(),
+            details: error.attempts || [],
+            consecutiveErrors,
             cache: {
                 hasCache: !!weatherCache.weather,
                 cacheAge: weatherCache.weatherTimestamp ? 
@@ -156,6 +198,7 @@ async function updateWeather() {
             }
         });
         
+        // Use cached data if available
         if (weatherCache.weather) {
             updateWeatherUI(weatherCache.weather, true);
         } else {
@@ -171,6 +214,12 @@ async function updateWeather() {
                 el.parentElement.classList.add('text-danger', 'weather-error');
             });
         }
+        
+        // If too many consecutive errors, increase update interval
+        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+            console.warn(`Too many consecutive errors (${consecutiveErrors}), increasing update interval`);
+            return;
+        }
     }
 }
 
@@ -182,6 +231,7 @@ function updateForecastUI(forecasts, showFallback = false) {
         forecastContainer.innerHTML = `
             <div class="col text-center">
                 <p class="text-muted">Forecast temporarily unavailable</p>
+                <p class="text-danger small">Service will retry automatically</p>
             </div>
         `;
         return;
@@ -233,6 +283,8 @@ async function updateForecast() {
         console.error('Error fetching forecast:', {
             message: error.message,
             timestamp: new Date().toISOString(),
+            details: error.attempts || [],
+            consecutiveErrors,
             cache: {
                 hasCache: !!weatherCache.forecast,
                 cacheAge: weatherCache.forecastTimestamp ? 
@@ -244,6 +296,12 @@ async function updateForecast() {
             updateForecastUI(weatherCache.forecast, true);
         } else {
             updateForecastUI(null);
+        }
+        
+        // If too many consecutive errors, increase update interval
+        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+            console.warn(`Too many consecutive errors (${consecutiveErrors}), increasing update interval`);
+            return;
         }
     }
 }
@@ -259,6 +317,7 @@ const initializeWeatherUpdates = async () => {
         setInterval(updateWeather, WEATHER_UPDATE_INTERVAL);
     } catch (error) {
         console.error('Failed to initialize weather updates:', error);
+        setTimeout(initializeWeatherUpdates, 60000); // Retry after 1 minute
     }
 };
 
@@ -268,6 +327,7 @@ const initializeForecastUpdates = async () => {
         setInterval(updateForecast, FORECAST_UPDATE_INTERVAL);
     } catch (error) {
         console.error('Failed to initialize forecast updates:', error);
+        setTimeout(initializeForecastUpdates, 60000); // Retry after 1 minute
     }
 };
 
