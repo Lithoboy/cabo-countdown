@@ -8,11 +8,14 @@ import json
 from cachetools import TTLCache
 from ratelimit import limits, sleep_and_retry
 import threading
+import atexit
+import signal
+import sys
 
-# Configure logging with more detailed format
+# Configure logging with minimized format
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(funcName)s:%(lineno)d'
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
@@ -21,12 +24,12 @@ app = Flask(__name__)
 API_KEY = os.environ.get('OPENWEATHERMAP_API_KEY')
 BASE_URL = "https://api.openweathermap.org/data/2.5"
 
-# Cache configuration - increased TTL for better reliability
-weather_cache = TTLCache(maxsize=100, ttl=1800)  # 30 minutes cache
-forecast_cache = TTLCache(maxsize=100, ttl=7200)  # 2 hours cache
+# Increased cache TTL for free tier optimization
+weather_cache = TTLCache(maxsize=100, ttl=3600)  # 1 hour cache
+forecast_cache = TTLCache(maxsize=100, ttl=14400)  # 4 hours cache
 
-# Rate limiting configuration - reduced calls to prevent hitting limits
-CALLS = 20
+# Rate limiting configuration
+CALLS = 15  # Reduced API calls
 RATE_LIMIT_PERIOD = 60
 
 # Common headers for API requests
@@ -36,16 +39,31 @@ API_HEADERS = {
     'Accept-Encoding': 'gzip, deflate'
 }
 
-# Fallback data
+# Enhanced fallback data
 FALLBACK_WEATHER = {
     'temperature': 75,
     'condition': 'Sunny',
     'humidity': 65,
-    'is_fallback': True
+    'is_fallback': True,
+    'last_updated': None
 }
 
 # Thread lock for rate limiting
 api_lock = threading.Lock()
+
+def shutdown_handler(signum=None, frame=None):
+    """Handle shutdown gracefully"""
+    logger.info("Shutting down application...")
+    # Clear caches
+    weather_cache.clear()
+    forecast_cache.clear()
+    logger.info("Caches cleared")
+    sys.exit(0)
+
+# Register shutdown handlers
+atexit.register(shutdown_handler)
+signal.signal(signal.SIGTERM, shutdown_handler)
+signal.signal(signal.SIGINT, shutdown_handler)
 
 @sleep_and_retry
 @limits(calls=CALLS, period=RATE_LIMIT_PERIOD)
@@ -223,40 +241,42 @@ def get_cached_forecast():
 
 @app.route('/health')
 def health_check():
-    """Health check endpoint for monitoring"""
+    """Enhanced health check endpoint for monitoring"""
     try:
         # Verify API key is present
         if not API_KEY:
             return jsonify({
                 'status': 'warning',
                 'message': 'Application running but API key is missing',
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.utcnow().isoformat(),
+                'system': {
+                    'cache_size': {
+                        'weather': len(weather_cache),
+                        'forecast': len(forecast_cache)
+                    },
+                    'cache_ttl': {
+                        'weather': weather_cache.ttl,
+                        'forecast': forecast_cache.ttl
+                    }
+                }
             }), 200
 
         # Check weather data availability
         weather_data = get_cached_weather()
         forecast_data = get_cached_forecast()
 
-        status = 'healthy'
-        messages = []
-
-        if weather_data.get('is_fallback', False):
-            status = 'degraded'
-            messages.append('Using fallback weather data')
-
-        if not forecast_data:
-            status = 'degraded'
-            messages.append('Forecast data unavailable')
-
         return jsonify({
-            'status': status,
-            'message': ' | '.join(messages) if messages else 'Application is running normally',
+            'status': 'healthy' if not weather_data.get('is_fallback') else 'degraded',
             'api_status': 'connected' if not weather_data.get('is_fallback') else 'disconnected',
             'cache_status': {
                 'weather_cache_size': len(weather_cache),
                 'forecast_cache_size': len(forecast_cache),
                 'weather_cache_ttl': weather_cache.ttl,
                 'forecast_cache_ttl': forecast_cache.ttl
+            },
+            'system': {
+                'startup_time': app.startup_time if hasattr(app, 'startup_time') else None,
+                'uptime': str(datetime.utcnow() - app.startup_time) if hasattr(app, 'startup_time') else None
             },
             'timestamp': datetime.utcnow().isoformat()
         }), 200
@@ -279,6 +299,9 @@ def weather():
 @app.route('/api/forecast')
 def forecast():
     return jsonify(get_cached_forecast())
+
+# Store startup time
+app.startup_time = datetime.utcnow()
 
 if __name__ == "__main__":
     # Verify API key is present

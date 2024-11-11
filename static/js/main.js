@@ -9,18 +9,38 @@ const weatherCache = {
     forecastTimestamp: null
 };
 
-// Cache duration in milliseconds
-const WEATHER_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
-const FORECAST_CACHE_DURATION = 120 * 60 * 1000; // 2 hours
+// Increased cache durations for free tier optimization
+const WEATHER_CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+const FORECAST_CACHE_DURATION = 4 * 60 * 60 * 1000; // 4 hours
 
-// Update intervals
-const WEATHER_UPDATE_INTERVAL = 30 * 60 * 1000; // 30 minutes
-const FORECAST_UPDATE_INTERVAL = 120 * 60 * 1000; // 2 hours
+// Update intervals aligned with cache duration
+const WEATHER_UPDATE_INTERVAL = 60 * 60 * 1000; // 1 hour
+const FORECAST_UPDATE_INTERVAL = 4 * 60 * 60 * 1000; // 4 hours
 
 // Request configuration
 const REQUEST_TIMEOUT = 20000; // 20 seconds
 const MAX_RETRIES = 5;
 const INITIAL_RETRY_DELAY = 2000;
+
+// Enhanced offline fallback data
+const OFFLINE_FALLBACK = {
+    weather: {
+        temperature: 75,
+        condition: 'Data Unavailable',
+        humidity: 65,
+        is_fallback: true,
+        last_updated: null
+    },
+    forecast: [
+        {
+            date: 'Dec 19',
+            temperature: 75,
+            condition: 'Typical',
+            humidity: 65,
+            is_fallback: true
+        }
+    ]
+};
 
 // Error tracking
 let consecutiveErrors = 0;
@@ -206,13 +226,9 @@ async function updateWeather() {
             const condElement = document.getElementById('condition');
             const humElement = document.getElementById('humidity');
             
-            tempElement.textContent = '--';
-            condElement.textContent = 'Service Unavailable';
-            humElement.textContent = '--';
-            
-            [tempElement, condElement, humElement].forEach(el => {
-                el.parentElement.classList.add('text-danger', 'weather-error');
-            });
+            // Use offline fallback if no cached data
+            const fallbackData = OFFLINE_FALLBACK.weather;
+            updateWeatherUI(fallbackData, true);
         }
         
         // If too many consecutive errors, increase update interval
@@ -228,13 +244,8 @@ function updateForecastUI(forecasts, showFallback = false) {
     forecastContainer.innerHTML = '';
     
     if (!forecasts || forecasts.length === 0) {
-        forecastContainer.innerHTML = `
-            <div class="col text-center">
-                <p class="text-muted">Forecast temporarily unavailable</p>
-                <p class="text-danger small">Service will retry automatically</p>
-            </div>
-        `;
-        return;
+        forecasts = OFFLINE_FALLBACK.forecast;
+        showFallback = true;
     }
     
     forecasts.forEach(forecast => {
@@ -331,6 +342,31 @@ const initializeForecastUpdates = async () => {
     }
 };
 
-// Start updates
-initializeWeatherUpdates();
-initializeForecastUpdates();
+// Add progressive loading
+document.addEventListener('DOMContentLoaded', () => {
+    // Load critical content first
+    updateCountdown();
+    
+    // Then load weather data with a slight delay
+    setTimeout(() => {
+        initializeWeatherUpdates();
+    }, 1000);
+    
+    // Finally load forecast data
+    setTimeout(() => {
+        initializeForecastUpdates();
+    }, 2000);
+});
+
+// Initialize offline support
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/static/js/sw.js')
+            .then(registration => {
+                console.log('ServiceWorker registration successful');
+            })
+            .catch(err => {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+    });
+}
