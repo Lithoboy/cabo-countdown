@@ -17,6 +17,11 @@ const FORECAST_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 const WEATHER_UPDATE_INTERVAL = 15 * 60 * 1000; // 15 minutes
 const FORECAST_UPDATE_INTERVAL = 30 * 60 * 1000; // 30 minutes
 
+// Request configuration
+const REQUEST_TIMEOUT = 10000; // 10 seconds
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 1000;
+
 function updateCountdown() {
     const currentDate = new Date();
     const difference = targetDate - currentDate;
@@ -32,17 +37,36 @@ function updateCountdown() {
     document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
 }
 
-async function fetchWithRetry(url, retries = 3, initialDelay = 1000) {
+async function fetchWithTimeout(url, options = {}) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+    
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Cabo Countdown App/1.0',
+                'Cache-Control': 'no-cache',
+                ...options.headers
+            }
+        });
+        
+        clearTimeout(id);
+        return response;
+    } catch (error) {
+        clearTimeout(id);
+        throw error;
+    }
+}
+
+async function fetchWithRetry(url, retries = MAX_RETRIES, initialDelay = INITIAL_RETRY_DELAY) {
     let lastError;
+    
     for (let i = 0; i < retries; i++) {
         try {
-            const response = await fetch(url, {
-                headers: {
-                    'Accept': 'application/json',
-                    'User-Agent': 'Cabo Countdown App/1.0'
-                },
-                cache: 'no-cache'
-            });
+            const response = await fetchWithTimeout(url);
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
@@ -56,15 +80,23 @@ async function fetchWithRetry(url, retries = 3, initialDelay = 1000) {
             return data;
         } catch (error) {
             lastError = error;
-            console.warn(`Attempt ${i + 1}/${retries} failed:`, error.message);
+            const retryCount = i + 1;
+            const isLastAttempt = retryCount === retries;
             
-            if (i < retries - 1) {
+            console.warn(
+                `Attempt ${retryCount}/${retries} failed:`,
+                error.name === 'AbortError' ? 'Request timeout' : error.message,
+                isLastAttempt ? '(Final attempt)' : ''
+            );
+            
+            if (!isLastAttempt) {
                 const delay = Math.min(initialDelay * Math.pow(2, i), 8000); // Cap at 8 seconds
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
     }
-    throw lastError;
+    
+    throw new Error(`Failed after ${retries} attempts: ${lastError.message}`);
 }
 
 function isCacheValid(timestamp, duration) {
@@ -75,7 +107,10 @@ function updateWeatherUI(data, showFallback = false) {
     const tempElement = document.getElementById('temperature');
     const condElement = document.getElementById('condition');
     const humElement = document.getElementById('humidity');
-
+    
+    // Reset error states
+    document.querySelectorAll('.weather-error').forEach(el => el.classList.remove('weather-error'));
+    
     if (showFallback) {
         tempElement.parentElement.classList.add('text-warning');
         condElement.parentElement.classList.add('text-warning');
@@ -83,7 +118,7 @@ function updateWeatherUI(data, showFallback = false) {
         tempElement.parentElement.classList.remove('text-warning');
         condElement.parentElement.classList.remove('text-warning');
     }
-
+    
     tempElement.textContent = data.temperature;
     condElement.textContent = data.condition;
     humElement.textContent = data.humidity;
@@ -93,35 +128,48 @@ async function updateWeather() {
     try {
         // Check cache first
         if (isCacheValid(weatherCache.weatherTimestamp, WEATHER_CACHE_DURATION)) {
-            updateWeatherUI(weatherCache.weather, weatherCache.weather.is_fallback);
-            return;
+            if (weatherCache.weather) {
+                updateWeatherUI(weatherCache.weather, weatherCache.weather.is_fallback);
+                return;
+            }
         }
-
+        
         const data = await fetchWithRetry('/api/weather');
         
         if (!data || (data.temperature === '--' && data.condition === '--')) {
             throw new Error('Invalid weather data received');
         }
-
+        
         // Update cache
         weatherCache.weather = data;
         weatherCache.weatherTimestamp = Date.now();
         
         updateWeatherUI(data, data.is_fallback);
     } catch (error) {
-        console.error('Error fetching weather:', error.message);
+        console.error('Error fetching weather:', {
+            message: error.message,
+            timestamp: new Date().toISOString(),
+            cache: {
+                hasCache: !!weatherCache.weather,
+                cacheAge: weatherCache.weatherTimestamp ? 
+                    Math.floor((Date.now() - weatherCache.weatherTimestamp) / 1000) : 'N/A'
+            }
+        });
         
-        // Use cached data if available
         if (weatherCache.weather) {
             updateWeatherUI(weatherCache.weather, true);
         } else {
-            // Show error state
-            document.getElementById('temperature').textContent = '--';
-            document.getElementById('condition').textContent = 'Service Unavailable';
-            document.getElementById('humidity').textContent = '--';
+            const tempElement = document.getElementById('temperature');
+            const condElement = document.getElementById('condition');
+            const humElement = document.getElementById('humidity');
             
-            document.getElementById('temperature').parentElement.classList.add('text-danger');
-            document.getElementById('condition').parentElement.classList.add('text-danger');
+            tempElement.textContent = '--';
+            condElement.textContent = 'Service Unavailable';
+            humElement.textContent = '--';
+            
+            [tempElement, condElement, humElement].forEach(el => {
+                el.parentElement.classList.add('text-danger', 'weather-error');
+            });
         }
     }
 }
@@ -129,7 +177,7 @@ async function updateWeather() {
 function updateForecastUI(forecasts, showFallback = false) {
     const forecastContainer = document.getElementById('forecast-info');
     forecastContainer.innerHTML = '';
-
+    
     if (!forecasts || forecasts.length === 0) {
         forecastContainer.innerHTML = `
             <div class="col text-center">
@@ -138,7 +186,7 @@ function updateForecastUI(forecasts, showFallback = false) {
         `;
         return;
     }
-
+    
     forecasts.forEach(forecast => {
         const forecastCol = document.createElement('div');
         forecastCol.className = 'col forecast-item';
@@ -164,25 +212,34 @@ async function updateForecast() {
     try {
         // Check cache first
         if (isCacheValid(weatherCache.forecastTimestamp, FORECAST_CACHE_DURATION)) {
-            updateForecastUI(weatherCache.forecast, false);
-            return;
+            if (weatherCache.forecast) {
+                updateForecastUI(weatherCache.forecast, false);
+                return;
+            }
         }
-
+        
         const forecasts = await fetchWithRetry('/api/forecast');
         
         if (!forecasts || !Array.isArray(forecasts)) {
             throw new Error('Invalid forecast data received');
         }
-
+        
         // Update cache
         weatherCache.forecast = forecasts;
         weatherCache.forecastTimestamp = Date.now();
         
         updateForecastUI(forecasts, false);
     } catch (error) {
-        console.error('Error fetching forecast:', error.message);
+        console.error('Error fetching forecast:', {
+            message: error.message,
+            timestamp: new Date().toISOString(),
+            cache: {
+                hasCache: !!weatherCache.forecast,
+                cacheAge: weatherCache.forecastTimestamp ? 
+                    Math.floor((Date.now() - weatherCache.forecastTimestamp) / 1000) : 'N/A'
+            }
+        });
         
-        // Use cached data if available
         if (weatherCache.forecast) {
             updateForecastUI(weatherCache.forecast, true);
         } else {
@@ -191,51 +248,29 @@ async function updateForecast() {
     }
 }
 
-// Gallery Enhancement Functions
-function initializeGallery() {
-    const galleryCards = document.querySelectorAll('.gallery-card');
-    
-    galleryCards.forEach(card => {
-        // Add lazy loading to images
-        const img = card.querySelector('.card-img-top');
-        if (img) {
-            img.loading = 'lazy';
-        }
-
-        // Add hover animation class
-        card.addEventListener('mouseenter', () => {
-            card.style.transform = 'translateY(-5px)';
-        });
-
-        card.addEventListener('mouseleave', () => {
-            card.style.transform = 'translateY(0)';
-        });
-
-        // Add focus states for accessibility
-        const link = card.querySelector('a');
-        if (link) {
-            link.addEventListener('focus', () => {
-                card.style.transform = 'translateY(-5px)';
-            });
-
-            link.addEventListener('blur', () => {
-                card.style.transform = 'translateY(0)';
-            });
-        }
-    });
-}
-
-// Initialize gallery when DOM is loaded
-document.addEventListener('DOMContentLoaded', initializeGallery);
-
-// Update countdown every second
+// Initialize countdown
+updateCountdown();
 setInterval(updateCountdown, 1000);
 
-// Update weather and forecast at different intervals
-setInterval(updateWeather, WEATHER_UPDATE_INTERVAL);
-setInterval(updateForecast, FORECAST_UPDATE_INTERVAL);
+// Initialize weather updates with error handling
+const initializeWeatherUpdates = async () => {
+    try {
+        await updateWeather();
+        setInterval(updateWeather, WEATHER_UPDATE_INTERVAL);
+    } catch (error) {
+        console.error('Failed to initialize weather updates:', error);
+    }
+};
 
-// Initial updates
-updateCountdown();
-updateWeather().catch(console.error);
-updateForecast().catch(console.error);
+const initializeForecastUpdates = async () => {
+    try {
+        await updateForecast();
+        setInterval(updateForecast, FORECAST_UPDATE_INTERVAL);
+    } catch (error) {
+        console.error('Failed to initialize forecast updates:', error);
+    }
+};
+
+// Start updates
+initializeWeatherUpdates();
+initializeForecastUpdates();
