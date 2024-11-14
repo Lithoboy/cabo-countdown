@@ -358,15 +358,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2000);
 });
 
-// Initialize offline support
+// Initialize offline support with proper error handling
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/js/sw.js')
-            .then(registration => {
-                console.log('ServiceWorker registration successful');
-            })
-            .catch(err => {
-                console.log('ServiceWorker registration failed: ', err);
-            });
+    window.addEventListener('load', async () => {
+        try {
+            const registration = await navigator.serviceWorker.register('/sw.js');
+            console.log('ServiceWorker registration successful:', registration);
+        } catch (err) {
+            console.warn('ServiceWorker registration failed:', err.message);
+        }
     });
 }
