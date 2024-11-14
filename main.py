@@ -9,14 +9,14 @@ if __name__ == "__main__":
     # Configure logging with minimized format for faster startup
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - [%(deployment_status)s] - %(message)s',
-        defaults={'deployment_status': 'STARTUP'}
+        format='%(asctime)s - %(levelname)s - [%(deployment_status)s] - %(message)s'
     )
     logger = logging.getLogger('waitress')
+    logger = logging.LoggerAdapter(logger, {'deployment_status': 'STARTUP'})
     
-    # Get port from environment or default to 5000
-    port = int(os.environ.get('PORT', 5000))
-    deployment_env = os.environ.get('REPLIT_DEPLOYMENT', 'development')
+    # Get port from environment with both Render and Replit compatibility
+    port = int(os.environ.get('PORT', os.environ.get('REPLIT_PORT', 5000)))
+    deployment_env = os.environ.get('RENDER_EXTERNAL_URL', os.environ.get('REPLIT_DEPLOYMENT', 'development'))
     
     # Quick startup logging
     logger.info(
@@ -33,7 +33,7 @@ if __name__ == "__main__":
             f"Binding to port {port}",
             extra={'deployment_status': 'STARTING'}
         )
-        serve(app, host="0.0.0.0", port=port, threads=2, url_scheme='http')
+        serve(app, host="0.0.0.0", port=port, threads=4, url_scheme='https')
         
         logger.info(
             'Ready',

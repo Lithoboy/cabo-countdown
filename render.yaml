@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: cabo-countdown
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: OPENWEATHERMAP_API_KEY
+        sync: false
+      - key: PORT
+        value: 10000
+    healthCheckPath: /health
+    autoDeploy: true
